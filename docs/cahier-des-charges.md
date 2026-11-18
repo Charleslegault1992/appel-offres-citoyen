@@ -241,6 +241,219 @@ flowchart LR
 
 ## 5. Diagrammes de classes et de séquence
 
+Les diagrammes Mermaid détaillés sont conservés dans [classes.md](classes.md). Ils présentent les attributs typés, les multiplicités, les montants en cents et la séquence complète du paiement avec webhook signé et traitement idempotent.
+
+## 6. Maquettes
+
+Les maquettes sont des écrans Web responsive de fidélité moyenne. Les montants sont toujours affichés en dollars canadiens; le serveur demeure la source de vérité pour les calculs. Les six images sont conservées dans `maquettes/`.
+
+| Écran | Objectif | État prévu |
+| --- | --- | --- |
+| [Accueil](maquettes/accueil.png) | Expliquer la proposition de valeur et diriger chaque rôle vers son parcours. | Trois projets fictifs ouverts et appel à l'action. |
+| [Tarifs](maquettes/tarifs.png) | Comparer le crédit unitaire et Pro. | Prix avant taxes, TPS, TVQ et total visibles. |
+| [Panier](maquettes/panier.png) | Vérifier le produit choisi avant Stripe. | Sous-total 5,00 $, TPS 0,25 $, TVQ 0,50 $, total 5,75 $. |
+| [Paiement](maquettes/paiement.png) | Payer dans Stripe Checkout. | Exemple d'erreur « Carte refusée » sans faux succès. |
+| [Confirmation](maquettes/confirmation.png) | Confirmer le paiement après traitement du webhook. | Commande payée, reçu et crédit disponible. |
+| [Compte et abonnement](maquettes/compte-abonnement.png) | Suivre crédits, Pro, paiements et annulation. | État vide pour les soumissions récentes. |
+
+### 6.1 Accueil
+
+![Maquette de l'accueil](maquettes/accueil.png)
+
+### 6.2 Tarifs
+
+![Maquette des tarifs](maquettes/tarifs.png)
+
+### 6.3 Panier
+
+![Maquette du panier](maquettes/panier.png)
+
+### 6.4 Paiement — état d'erreur
+
+![Maquette du paiement avec une carte refusée](maquettes/paiement.png)
+
+### 6.5 Confirmation
+
+![Maquette de confirmation du paiement](maquettes/confirmation.png)
+
+### 6.6 Compte et abonnement — état vide
+
+![Maquette du compte et de l'abonnement](maquettes/compte-abonnement.png)
+
+## 7. Schéma de données
+
+### 7.1 Schéma relationnel
+
+```mermaid
+erDiagram
+  USER ||--o| CONTRACTOR_PROFILE : possede
+  USER ||--o{ PROJECT : publie
+  PROJECT ||--o{ PROJECT_IMAGE : contient
+  USER ||--o{ BID : depose
+  PROJECT ||--o{ BID : recoit
+  USER ||--o{ CREDIT : detient
+  CREDIT ||--o| BID : utilise_pour
+  PRODUCT ||--o{ PRICE : possede
+  USER ||--o{ ORDER : passe
+  ORDER ||--|{ ORDER_ITEM : contient
+  ORDER_ITEM ||--o{ CREDIT : genere
+  USER ||--o{ SUBSCRIPTION : souscrit
+  PRICE ||--o{ SUBSCRIPTION : tarifie
+  SUBSCRIPTION ||--o{ CREDIT : genere
+  ORDER ||--o{ REFUND : fait_objet
+  CREDIT o|--o| REFUND : est_vise
+
+  USER {
+    string id PK
+    string clerkId UK
+    string email UK
+    string name
+    enum role
+    string region
+    datetime createdAt
+  }
+  CONTRACTOR_PROFILE {
+    string id PK
+    string userId FK,UK
+    string rbqNumber UK
+    string specialty
+    enum status
+    datetime verifiedAt
+  }
+  PROJECT {
+    string id PK
+    string citizenId FK
+    string title
+    string description
+    string region
+    int budgetCents
+    enum status
+    datetime expiresAt
+    datetime createdAt
+  }
+  PROJECT_IMAGE {
+    string id PK
+    string projectId FK
+    string url
+    int position
+  }
+  BID {
+    string id PK
+    string projectId FK
+    string contractorId FK
+    string creditId FK,UK
+    int amountCents
+    string availability
+    string conditions
+    enum status
+    datetime createdAt
+  }
+  CREDIT {
+    string id PK
+    string contractorId FK
+    string orderItemId FK
+    string subscriptionId FK
+    enum source
+    enum status
+    datetime expiresAt
+    datetime usedAt
+  }
+  PRODUCT {
+    string id PK
+    string code UK
+    string name
+    enum type
+    boolean active
+  }
+  PRICE {
+    string id PK
+    string productId FK
+    string stripePriceId UK
+    int amountCents
+    string currency
+    enum interval
+    boolean active
+  }
+  ORDER {
+    string id PK
+    string contractorId FK
+    enum status
+    string stripeCheckoutSessionId UK
+    int subtotalCents
+    int gstCents
+    int qstCents
+    int totalCents
+    datetime paidAt
+    datetime createdAt
+  }
+  ORDER_ITEM {
+    string id PK
+    string orderId FK
+    string productCodeSnapshot
+    string productNameSnapshot
+    int unitPriceCents
+    int quantity
+    int subtotalCents
+    int gstCents
+    int qstCents
+    int totalCents
+  }
+  SUBSCRIPTION {
+    string id PK
+    string contractorId FK
+    string priceId FK
+    string stripeSubscriptionId UK
+    string stripeCustomerId
+    enum status
+    datetime periodStartAt
+    datetime periodEndAt
+    boolean cancelAtPeriodEnd
+  }
+  REFUND {
+    string id PK
+    string orderId FK
+    string creditId FK,UK
+    string stripeRefundId UK
+    int amountCents
+    enum status
+    string reason
+    datetime requestedAt
+    datetime processedAt
+  }
+  WEBHOOK_EVENT {
+    string id PK
+    string type
+    enum status
+    datetime receivedAt
+    datetime processedAt
+  }
+```
+
+`WebhookEvent` est volontairement indépendant : son `id` est l'identifiant Stripe et sert de verrou d'idempotence avant toute mutation financière.
+
+### 7.2 États et intégrité
+
+| Élément | Valeurs prévues | Règle d'intégrité |
+| --- | --- | --- |
+| `User.role` | `CITIZEN`, `CONTRACTOR`, `ADMIN` | Les autorisations sont validées côté serveur. |
+| `Project.status` | `DRAFT`, `OPEN`, `AWARDED`, `CLOSED`, `EXPIRED` | Seul `OPEN` accepte une soumission (RM-02). |
+| `Bid.status` | `SUBMITTED`, `ACCEPTED`, `REJECTED`, `WITHDRAWN` | Unique sur `(projectId, contractorId)`; montant positif et au plus égal au budget (RM-03, RM-13). |
+| `Credit.status` | `AVAILABLE`, `USED`, `EXPIRED`, `REFUNDED` | Un crédit `AVAILABLE` est consommé dans la même transaction que la création de l'offre. |
+| `Order.status` | `PENDING`, `PAID`, `CANCELED`, `REFUNDED` | `PAID` seulement après un webhook signé (RM-05). |
+| `Subscription.status` | `INCOMPLETE`, `ACTIVE`, `PAST_DUE`, `CANCELED` | Une facture payée donne 10 crédits une seule fois (RM-06). |
+| `Refund.status` | `REQUESTED`, `APPROVED`, `REJECTED`, `SUCCEEDED`, `FAILED` | Le crédit unitaire doit être inutilisé et acheté depuis au plus 14 jours (RM-08). |
+| `WebhookEvent.status` | `RECEIVED`, `PROCESSED`, `FAILED`, `IGNORED` | La clé primaire Stripe empêche le retraitement. |
+
+### 7.3 Contraintes et index attendus dans Prisma
+
+- Tous les prix, taxes, budgets et offres utilisent `Int` avec le suffixe `Cents`; aucun `Float` ni `Decimal`.
+- `OrderItem` conserve le code, le nom, le prix unitaire et les taxes au moment de l'achat, même si `Price` change plus tard.
+- `onDelete: Restrict` protège les utilisateurs, commandes, lignes, abonnements, crédits, offres et remboursements ayant une valeur d'audit.
+- Index sur chaque clé étrangère et sur les recherches fréquentes : `Project(status, region)`, `Project(status, expiresAt)`, `Bid(projectId, status)`, `Credit(contractorId, status, expiresAt)`, `Order(contractorId, createdAt)` et `Subscription(contractorId, status)`.
+- Contraintes uniques : `(projectId, contractorId)`, `Bid.creditId`, les identifiants Stripe et `WebhookEvent.id`.
+- La première migration doit ajouter au minimum les contraintes SQL `CHECK (budget_cents > 0)`, `CHECK (amount_cents > 0)` et une contrainte ou un déclencheur garantissant qu'une offre ne dépasse pas le budget du projet. Cette dernière règle est aussi vérifiée dans la transaction applicative avant de consommer un crédit (RM-13).
+- Les opérations sensibles sont atomiques : traitement du webhook, attribution des crédits, consommation du crédit avec création de l'offre, attribution du projet et remboursement.
+
 ## 6. Maquettes
 
 ## 7. Schéma de données
