@@ -454,6 +454,10 @@ erDiagram
 - La première migration doit ajouter au minimum les contraintes SQL `CHECK (budget_cents > 0)`, `CHECK (amount_cents > 0)` et une contrainte ou un déclencheur garantissant qu'une offre ne dépasse pas le budget du projet. Cette dernière règle est aussi vérifiée dans la transaction applicative avant de consommer un crédit (RM-13).
 - Les opérations sensibles sont atomiques : traitement du webhook, attribution des crédits, consommation du crédit avec création de l'offre, attribution du projet et remboursement.
 
+## 6. Maquettes
+
+## 7. Schéma de données
+
 ## 8. Exigences non fonctionnelles
 
 | ID | Exigence mesurable |
@@ -512,3 +516,4 @@ Les identifiants `US-xx`, `CA-xx`, `RM-xx` et `ENF-xx` sont réutilisés dans le
 - [RénoAssistance — FAQ entrepreneurs](https://www.renoassistance.ca/fr/entrepreneur/faq)
 - [GoSoumissions — Entrepreneurs](https://gosoumissions.com/entrepreneurs)
 - [Office de la protection du consommateur — Avant d'engager un entrepreneur](https://www.opc.gouv.qc.ca/consommateur/bien-service/habitation-renovation/renovation/conseils/entrepreneur)
+
