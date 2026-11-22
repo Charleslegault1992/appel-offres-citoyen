@@ -8,7 +8,7 @@
 | Travail | Laboratoire 1 — cahier des charges et modèle de paiement |
 | Projet | Option B — nouveau projet |
 | Version | 1 |
-| Équipe | Eva Besette, Marc-André Dufour et Charles Legault (3 membres) |
+| Équipe | Eva Bessette, Marc-André Dufour et Charles Legault (3 membres) |
 | Modèle | Paiement unique de 5 $ par crédit de soumission + abonnement Pro à 29,99 $/mois |
 | Technologies | Next.js, TypeScript, Clerk, Prisma, PostgreSQL (Neon), Stripe Checkout |
 
@@ -486,7 +486,7 @@ erDiagram
 
 | Membre | Responsabilités | Stories |
 | --- | --- | --- |
-| Eva Besette | À déterminer | À déterminer |
+| Eva Bessette | À déterminer | À déterminer |
 | Marc-André Dufour | À déterminer | À déterminer |
 | Charles Legault | À déterminer | À déterminer |
 
