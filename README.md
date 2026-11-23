@@ -4,7 +4,7 @@ Plateforme Web transactionnelle québécoise où les citoyens publient gratuitem
 
 ## Équipe
 
-- Eva Besette
+- Eva Bessette
 - Marc-André Dufour
 - Charles Legault
 
