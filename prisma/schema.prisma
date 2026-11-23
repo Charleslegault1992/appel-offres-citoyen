@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_UNPOOLED")
+}
+
+enum UserRole {
+  CITIZEN
+  CONTRACTOR
+  ADMIN
+}
+
+enum ProfileStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProjectStatus {
+  DRAFT
+  OPEN
+  AWARDED
+  CLOSED
+  EXPIRED
+}
+
+enum BidStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum CreditSource {
+  UNIT_PURCHASE
+  SUBSCRIPTION
+}
+
+enum CreditStatus {
+  AVAILABLE
+  USED
+  EXPIRED
+  REFUNDED
+}
+
+enum ProductType {
+  CREDIT_UNIT
+  SUBSCRIPTION
+}
+
+enum BillingInterval {
+  ONE_TIME
+  MONTH
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  SUCCEEDED
+  FAILED
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+model User {
+  id                String             @id @default(cuid())
+  clerkId           String             @unique @map("clerk_id")
+  email             String             @unique
+  name              String
+  role              UserRole
+  region            String
+  createdAt         DateTime           @default(now()) @map("created_at")
+  contractorProfile ContractorProfile?
+  projects          Project[]          @relation("CitizenProjects")
+  bids              Bid[]              @relation("ContractorBids")
+  credits           Credit[]           @relation("ContractorCredits")
+  orders            Order[]            @relation("ContractorOrders")
+  subscriptions     Subscription[]     @relation("ContractorSubscriptions")
+
+  @@map("users")
+}
+
+model ContractorProfile {
+  id         String        @id @default(cuid())
+  userId     String        @unique @map("user_id")
+  rbqNumber  String        @unique @map("rbq_number")
+  specialty  String
+  status     ProfileStatus @default(PENDING)
+  verifiedAt DateTime?     @map("verified_at")
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("contractor_profiles")
+}
+
+model Project {
+  id          String         @id @default(cuid())
+  citizenId   String         @map("citizen_id")
+  title       String
+  description String
+  region      String
+  budgetCents Int            @map("budget_cents")
+  status      ProjectStatus  @default(DRAFT)
+  expiresAt   DateTime       @map("expires_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  citizen     User           @relation("CitizenProjects", fields: [citizenId], references: [id], onDelete: Restrict)
+  images      ProjectImage[]
+  bids        Bid[]
+
+  @@index([citizenId])
+  @@index([status, region])
+  @@index([status, expiresAt])
+  @@map("projects")
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
+  projectId String  @map("project_id")
+  url       String
+  position  Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, position])
+  @@index([projectId])
+  @@map("project_images")
+}
+
+model Bid {
+  id           String    @id @default(cuid())
+  projectId    String    @map("project_id")
+  contractorId String    @map("contractor_id")
+  creditId     String    @unique @map("credit_id")
+  amountCents  Int       @map("amount_cents")
+  availability String
+  conditions   String?
+  status       BidStatus @default(SUBMITTED)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  contractor   User      @relation("ContractorBids", fields: [contractorId], references: [id], onDelete: Restrict)
+  credit       Credit    @relation(fields: [creditId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, contractorId])
+  @@index([contractorId])
+  @@index([projectId, status])
+  @@map("bids")
+}
+
+model Credit {
+  id             String        @id @default(cuid())
+  contractorId   String        @map("contractor_id")
+  orderItemId    String?       @map("order_item_id")
+  subscriptionId String?       @map("subscription_id")
+  source         CreditSource
+  status         CreditStatus  @default(AVAILABLE)
+  expiresAt      DateTime?     @map("expires_at")
+  usedAt         DateTime?     @map("used_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  contractor     User          @relation("ContractorCredits", fields: [contractorId], references: [id], onDelete: Restrict)
+  orderItem      OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  bid            Bid?
+  refund         Refund?
+
+  @@index([orderItemId])
+  @@index([subscriptionId])
+  @@index([contractorId, status, expiresAt])
+  @@map("credits")
+}
+
+model Product {
+  id     String      @id @default(cuid())
+  code   String      @unique
+  name   String
+  type   ProductType
+  active Boolean     @default(true)
+  prices Price[]
+
+  @@map("products")
+}
+
+model Price {
+  id            String          @id @default(cuid())
+  productId     String          @map("product_id")
+  stripePriceId String          @unique @map("stripe_price_id")
+  amountCents   Int             @map("amount_cents")
+  currency      String          @default("cad")
+  interval      BillingInterval
+  active        Boolean         @default(true)
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  subscriptions Subscription[]
+
+  @@index([productId])
+  @@map("prices")
+}
+
+model Order {
+  id                      String      @id @default(cuid())
+  contractorId            String      @map("contractor_id")
+  status                  OrderStatus @default(PENDING)
+  stripeCheckoutSessionId String?     @unique @map("stripe_checkout_session_id")
+  subtotalCents           Int         @map("subtotal_cents")
+  gstCents                Int         @map("gst_cents")
+  qstCents                Int         @map("qst_cents")
+  totalCents              Int         @map("total_cents")
+  paidAt                  DateTime?   @map("paid_at")
+  createdAt               DateTime    @default(now()) @map("created_at")
+  contractor              User        @relation("ContractorOrders", fields: [contractorId], references: [id], onDelete: Restrict)
+  items                   OrderItem[]
+  refunds                 Refund[]
+
+  @@index([contractorId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String   @id @default(cuid())
+  orderId             String   @map("order_id")
+  productCodeSnapshot String   @map("product_code_snapshot")
+  productNameSnapshot String   @map("product_name_snapshot")
+  unitPriceCents      Int      @map("unit_price_cents")
+  quantity            Int
+  subtotalCents       Int      @map("subtotal_cents")
+  gstCents            Int      @map("gst_cents")
+  qstCents            Int      @map("qst_cents")
+  totalCents          Int      @map("total_cents")
+  order               Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  credits             Credit[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  contractorId         String             @map("contractor_id")
+  priceId              String             @map("price_id")
+  stripeSubscriptionId String             @unique @map("stripe_subscription_id")
+  stripeCustomerId     String             @map("stripe_customer_id")
+  status               SubscriptionStatus @default(INCOMPLETE)
+  periodStartAt        DateTime           @map("period_start_at")
+  periodEndAt          DateTime           @map("period_end_at")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  contractor           User               @relation("ContractorSubscriptions", fields: [contractorId], references: [id], onDelete: Restrict)
+  price                Price              @relation(fields: [priceId], references: [id], onDelete: Restrict)
+  credits              Credit[]
+
+  @@index([priceId])
+  @@index([stripeCustomerId])
+  @@index([contractorId, status])
+  @@map("subscriptions")
+}
+
+model Refund {
+  id             String       @id @default(cuid())
+  orderId        String       @map("order_id")
+  creditId       String       @unique @map("credit_id")
+  stripeRefundId String?      @unique @map("stripe_refund_id")
+  amountCents    Int          @map("amount_cents")
+  status         RefundStatus @default(REQUESTED)
+  reason         String
+  requestedAt    DateTime     @default(now()) @map("requested_at")
+  processedAt    DateTime?    @map("processed_at")
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  credit         Credit       @relation(fields: [creditId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("refunds")
+}
+
+model WebhookEvent {
+  id          String        @id
+  type        String
+  status      WebhookStatus @default(RECEIVED)
+  receivedAt  DateTime      @default(now()) @map("received_at")
+  processedAt DateTime?     @map("processed_at")
+
+  @@map("webhook_events")
+}
