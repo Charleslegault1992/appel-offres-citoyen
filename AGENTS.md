@@ -13,27 +13,31 @@ Diagrammes de classes et de séquence : [docs/classes.md](docs/classes.md). Maqu
 
 ## Commandes
 
-> **À vérifier quand l'application Next.js sera créée (Laboratoire 2).** Le dépôt ne contient encore ni `package.json` ni `prisma/schema.prisma`. Les commandes ci-dessous sont celles du gabarit du cours (SymposiQ). Vérifie le nom des scripts dans `package.json`, puis retire la mention « à vérifier ».
+Le projet contient le schéma Prisma et sa migration initiale.
+L'application Next.js sera développée dans les prochains laboratoires.
 
-| Vérification | Commande (à vérifier) | Quand la lancer |
-| --- | --- | --- |
-| Serveur de développement | `npm run dev` | Pour tester une page ou une route à la main |
-| Tests (Vitest) | `npm test` (`vitest run`) | Après chaque changement |
-| Un seul fichier de test | `npm test -- <fichier>` (ex. `lib/taxes.test.ts`) | Pendant le travail sur une règle précise |
-| Lint | `npm run lint` | Après chaque changement, avant chaque commit |
-| Build | `npm run build` | Avant chaque commit |
-| Validation du schéma Prisma | `npx prisma validate` | Après chaque modification de `prisma/schema.prisma` |
+| Vérification                         | Commande                  |
+| ------------------------------------ | ------------------------- |
+| Installer les dépendances            | `npm ci`                  |
+| Valider le schéma Prisma             | `npm run prisma:validate` |
+| Générer le client Prisma             | `npm run prisma:generate` |
+| Créer une migration en développement | `npm run db:migrate`      |
+| Appliquer les migrations sur Neon    | `npm run db:deploy`       |
 
 ## Architecture et conventions
 
 **Pile :** Next.js (App Router) + TypeScript, Clerk (authentification), Prisma + PostgreSQL (Neon), Stripe Checkout et webhooks en **mode test**, Vitest.
 
 **Dossiers actuels :**
+
 - `docs/` : cahier des charges, diagrammes UML (Mermaid), maquettes et journal IA ([docs/journal-ia.md](docs/journal-ia.md)).
 - `.claude/settings.json` : permissions partagées de Claude Code (accès refusé aux secrets et aux commandes destructrices).
-- _Les dossiers de l'application (`app/`, `prisma/`, etc.) seront ajoutés ici dès leur création._
+- `prisma/` : schéma de la base de données et migrations SQL.
+- `package.json` : dépendances et commandes Prisma.
+- `app/` : sera ajouté lors du développement de l'application Next.js.
 
 **Données (cahier, section 7) :**
+
 - Tous les montants (prix, taxes, budgets, offres) sont des `Int` dont le nom se termine par `Cents` (`budgetCents`, `amountCents`). Jamais de `Float` ni de `Decimal`.
 - Les statuts sont des enums Prisma dont les valeurs sont en MAJUSCULES : `Project.status` = `DRAFT | OPEN | AWARDED | CLOSED | EXPIRED`, `Bid.status`, `Credit.status`, `Order.status`, `Subscription.status`, `Refund.status`, `WebhookEvent.status` (voir le tableau de la section 7.2).
 - Les relations Prisma sont déclarées explicitement, avec un index sur chaque clé étrangère. `onDelete: Restrict` s'applique aux entités qui servent d'audit (utilisateurs, commandes, lignes, abonnements, crédits, offres, remboursements).
@@ -44,6 +48,7 @@ Diagrammes de classes et de séquence : [docs/classes.md](docs/classes.md). Maqu
 **Traçabilité :** réutilise les identifiants `US-xx`, `CA-xx`, `RM-xx`, `ENF-xx` et `UC-xx` du cahier dans les noms de tests et les messages de commit.
 
 **Git :**
+
 - Messages de commit `type: description` en français, avec l'identifiant concerné. Exemple : `docs: RM-05 préciser la confirmation des paiements`, `feat: US-07 déposer une offre`.
 - Une branche par issue GitHub (par exemple `1-s1-t02-finaliser-le-cahier-des-charges`), fusionnée dans `main` par une PR.
 - Chaque membre fait ses commits avec son propre compte Git.
