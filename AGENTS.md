@@ -13,12 +13,13 @@ Diagrammes de classes et de séquence : [docs/classes.md](docs/classes.md). Maqu
 
 ## Commandes
 
-Le projet contient le schéma Prisma et sa migration initiale.
-L'application Next.js sera développée dans les prochains laboratoires.
-
 | Vérification                         | Commande                  |
 | ------------------------------------ | ------------------------- |
 | Installer les dépendances            | `npm ci`                  |
+| Démarrer Next.js                     | `npm run dev`             |
+| Vérifier les types                   | `npm run typecheck`       |
+| Vérifier le style                    | `npm run lint`            |
+| Construire l'application             | `npm run build`           |
 | Valider le schéma Prisma             | `npm run prisma:validate` |
 | Générer le client Prisma             | `npm run prisma:generate` |
 | Créer une migration en développement | `npm run db:migrate`      |
@@ -33,8 +34,10 @@ L'application Next.js sera développée dans les prochains laboratoires.
 - `docs/` : cahier des charges, diagrammes UML (Mermaid), maquettes et journal IA ([docs/journal-ia.md](docs/journal-ia.md)).
 - `.claude/settings.json` : permissions partagées de Claude Code (accès refusé aux secrets et aux commandes destructrices).
 - `prisma/` : schéma de la base de données et migrations SQL.
-- `package.json` : dépendances et commandes Prisma.
-- `app/` : sera ajouté lors du développement de l'application Next.js.
+- `package.json` : dépendances et commandes Next.js et Prisma.
+- `app/` : pages serveur et Route Handlers Next.js.
+- `lib/services/` : logique métier réutilisable.
+- `lib/prisma.ts` : instance Prisma unique, réservée au serveur.
 
 **Données (cahier, section 7) :**
 
