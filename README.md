@@ -28,3 +28,36 @@ npm run db:deploy
 ```
 
 `db:deploy` applique les migrations existantes sans en générer une nouvelle. Ne jamais versionner `.env` ni afficher son contenu dans un terminal partagé.
+
+## Développement
+
+```powershell
+npm install
+npm run prisma:generate
+npm run dev
+```
+
+L'application répond sur `http://localhost:3000`. Avant une PR :
+
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+```
+
+## Architecture
+
+```text
+Navigateur
+   |
+   v
+app/                         Pages et points d'entrée HTTP
+   |
+   v
+lib/services/                Logique métier réutilisable
+   |
+   v
+lib/prisma.ts                Accès unique à PostgreSQL avec Prisma
+```
+
+Les pages et Route Handlers restent minces : ils reçoivent la requête, délèguent au service, puis construisent la réponse. Les composants client n'accèdent jamais à Prisma. Les modules serveur qui utilisent la base ou des secrets importent `server-only`.
