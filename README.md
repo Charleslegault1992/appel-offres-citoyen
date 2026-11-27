@@ -25,6 +25,19 @@ Copy-Item .env.example .env
 npm run prisma:validate
 npm run prisma:generate
 npm run db:deploy
+npm run db:seed
 ```
 
 `db:deploy` applique les migrations existantes sans en générer une nouvelle. Ne jamais versionner `.env` ni afficher son contenu dans un terminal partagé.
+
+`db:seed` ajoute ou remet à jour des données fictives de démonstration. Il écrit dans la base configurée par `DATABASE_URL_UNPOOLED`; vérifiez toujours la cible avant de le lancer.
+
+## Comptes de test du seed
+
+| Courriel | Rôle | Usage |
+| --- | --- | --- |
+| `admin@exemple.ca` | `ADMIN` | Administration |
+| `citoyen@exemple.ca` | `CITIZEN` | Publication d'un projet |
+| `entrepreneur@exemple.ca` | `CONTRACTOR` | Achat et soumission |
+
+Le seed est idempotent et contient aussi deux produits, leurs prix en cents, un projet ouvert, une commande payée, sa ligne avec snapshot, un crédit disponible et l'événement webhook fictif correspondant. Les identifiants Stripe de prix restent vides : le parcours du Laboratoire 3 utilisera `price_data` avec les montants relus dans la base.
