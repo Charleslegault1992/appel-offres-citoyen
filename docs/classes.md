@@ -82,7 +82,7 @@ classDiagram
   class Price {
     +String id
     +String productId
-    +String stripePriceId
+    +String? stripePriceId
     +Int amountCents
     +String currency
     +BillingInterval interval
@@ -165,7 +165,7 @@ classDiagram
   Credit "0..1" -- "0..1" Refund : crédit visé
 ```
 
-**Contraintes structurantes :** une seule soumission par couple `(projectId, contractorId)` (RM-03); une seule utilisation par `creditId`; `stripePriceId`, `stripeCheckoutSessionId`, `stripeSubscriptionId` et `stripeRefundId` sont uniques; `WebhookEvent.id` est l'identifiant Stripe sans valeur générée; une offre doit respecter `amountCents <= Project.budgetCents` (RM-13).
+**Contraintes structurantes :** une seule soumission par couple `(projectId, contractorId)` (RM-03); une seule utilisation par `creditId`; `stripePriceId` est optionnel et unique lorsqu'il existe, puisque Checkout utilisera `price_data`; `stripeCheckoutSessionId`, `stripeSubscriptionId` et `stripeRefundId` sont uniques; `WebhookEvent.id` est l'identifiant Stripe sans valeur générée; une offre doit respecter `amountCents <= Project.budgetCents` (RM-13).
 
 ## 2. Diagramme de séquence — achat d'un crédit
 

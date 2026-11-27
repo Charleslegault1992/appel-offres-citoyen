@@ -203,7 +203,7 @@ model Product {
 model Price {
   id            String          @id @default(cuid())
   productId     String          @map("product_id")
-  stripePriceId String          @unique @map("stripe_price_id")
+  stripePriceId String?         @unique @map("stripe_price_id")
   amountCents   Int             @map("amount_cents")
   currency      String          @default("cad")
   interval      BillingInterval

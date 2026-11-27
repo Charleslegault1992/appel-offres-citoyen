@@ -12,7 +12,8 @@
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",
@@ -28,6 +29,10 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.6",
     "prisma": "6.12.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "tsx": "^4.23.15"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
